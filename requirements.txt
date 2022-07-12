@@ -1,0 +1,3 @@
+﻿pathvalidate
+tqdm
+git+https://github.com/patil-suraj/vqgan-jax.git@main

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sample browser</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/normalize.css@8.0.1/normalize.min.css">
+    <style type="text/css">
+        :root {
+            color-scheme: light dark;
+        }
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        .controls-form {
+            width: 100%;
+            display: flex;
+        }
+
+        fieldset {
+            border: 0;
+        }
+
+        .prompts-container {
+            margin-left: 16px;
+            margin-right: 16px;
+            max-width: 50%;
+        }
+
+        .prompts-menu {
+            list-style: none;
+            padding: 0;
+        }
+
+        .params-container {
+            flex: content;
+        }
+
+        .params-table {
+            border-spacing: 1em 0.5em;
+        }
+
+        .params-label-column {
+            white-space: nowrap;
+        }
+
+        .params-control-column {
+            width: 100%;
+        }
+
+        .gallery {
+            display: flex;
+            flex-flow: row wrap;
+        }
+
+        .gallery img {
+            height: 192px;
+            margin: 5px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        customElements.define('choice-slider',
+            class ChoiceSlider extends HTMLElement {
+                constructor() {
+                    super();
+                    this.attachShadow({ mode: 'open' });
+                    this.shadowRoot.innerHTML = `
+                        <style type="text/css">
+                            datalist {
+                                width: 100%;
+                                display: flex;
+                            }
+                            ::slotted(option) {
+                                flex: 2;
+                                text-align: center;
+                            }
+                            ::slotted(option:first-child) {
+                                flex: 1;
+                                text-align: left;
+                            }
+                            ::slotted(option:last-child) {
+                                flex: 1;
+                                text-align: right;
+                            }
+                            input[type=range] {
+                                width: 100%;
+                            }
+                        </style>
+                        <input type="range" class="slider" list="list" min="0" step="1" />
+                        <datalist id="list"><slot></slot></datalist>
+                    `;
+
+                    this.input = this.shadowRoot.querySelector('input');
+                    this.input.addEventListener('change', () => {
+                        this.value = this.options[this.input.value].innerText;
+                        this.dispatchEvent(new CustomEvent('change', {
+                            detail: {
+                                value: this.value
+                            }
+                        }));
+                    });
+
+                    this.shadowRoot.querySelector('slot').addEventListener('slotchange', () => {
+                        this.options = this.querySelectorAll('option');
+                        this.input.setAttribute('max', this.options.length - 1);
+                        const selectedIndex = Array.prototype.findIndex.call(this.options, option => option.selected);
+                        if (selectedIndex != -1) {
+                            this.input.value = selectedIndex;
+                        }
+                        this.value = this.options[this.input.value].innerText;
+                    });
+                }
+            }
+        );
+
+        function updateGallery() {
+            const top_k = document.getElementById('top_k').value;
+            const top_p = document.getElementById('top_p').value;
+            const temperature = document.getElementById('temperature').value;
+            const cond_scale = document.getElementById('cond_scale').value;
+            const prompt_folder = document.querySelector('input[name="prompt"]:checked').value;
+
+            const spec = `k=${top_k},p=${top_p},t=${temperature},c=${cond_scale}`;
+
+            for (let i = 0; i < 32; i++) {
+                const img = document.getElementById(`img${i}`);
+                img.src = `images/${prompt_folder}/0001_${spec}_${i.toString().padStart(2, '0')}_None.png`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateGallery();
+        });
+    </script>
+</head>
+
+<body>
+    <form name="controls" id="controls" class="controls-form">
+        <fieldset class="prompts-container">
+            <menu class="prompts-menu" id="prompts">
+                <li><label>
+                    <input type="radio" name="prompt" value="0001_painting of a forest full of elves and fairies" onchange="updateGallery()" checked>
+                    painting of a forest full of elves and fairies
+                </label></li>
+                <li><label>
+                    <input type="radio" name="prompt" value="0002_a facebook-branded dinosaur" onchange="updateGallery()">
+                    a facebook-branded dinosaur
+                </label></li>
+                <li><label>
+                    <input type="radio" name="prompt" value="0003_a rocket in the shape of the Eiffel tower taking off" onchange="updateGallery()">
+                    a rocket in the shape of the Eiffel tower taking off
+                </label></li>
+                <li><label>
+                    <input type="radio" name="prompt" value="0004_times square underwater, times square at the bottom of the ocean" onchange="updateGallery()">
+                    times square underwater, times square at the bottom of the ocean
+                </label></li>
+                <li><label>
+                    <input type="radio" name="prompt" value="0005_a picture of a castle from minecraft" onchange="updateGallery()">
+                    a picture of a castle from minecraft
+                </label></li>
+                <li><label>
+                    <input type="radio" name="prompt" value="0006_happy, happiness" onchange="updateGallery()">
+                    happy, happiness
+                </label></li>
+                <li><label>
+                    <input type="radio" name="prompt" value="0007_a cute avocado armchair singing karaoke on stage in front of a crowd of strawberry shaped lamps" onchange="updateGallery()">
+                    a cute avocado armchair singing karaoke on stage in front of a crowd of strawberry shaped lamps
+                </label></li>
+            </menu>
+        </fieldset>
+        <fieldset class="params-container">
+            <table id="options">
+                <tr>
+                    <td class="params-label-column">
+                        <label for="top_k">Top k</label>
+                    </td>
+                    <td class="params-control-column">
+                        <choice-slider id="top_k" onchange="updateGallery()">
+                            <option selected>50</option>
+                            <option>128</option>
+                            <option>256</option>
+                            <option>0</option>
+                        </choice-slider>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="params-label-column">
+                        <label for="top_p">Top p</label>
+                    </td>
+                    <td class="params-control-column">
+                        <choice-slider id="top_p" onchange="updateGallery()">
+                            <option>0.9</option>
+                            <option>0.95</option>
+                            <option>0.99</option>
+                            <option selected>1.0</option>
+                        </choice-slider>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="params-label-column">
+                        <label for="temperature">Temperature</label>
+                    </td>
+                    <td class="params-control-column">
+                        <choice-slider id="temperature" onchange="updateGallery()">
+                            <option>0.4</option>
+                            <option>0.7</option>
+                            <option>0.9</option>
+                            <option selected>1.0</option>
+                            <option>3.0</option>
+                        </choice-slider>
+                </tr>
+                <tr>
+                    <td class="params-label-column">
+                        <label for="cond_scale">Condition scale</label>
+                    </td>
+                    <td class="params-control-column">
+                        <choice-slider id="cond_scale" onchange="updateGallery()">
+                            <option>1.0</option>
+                            <option>3.0</option>
+                            <option selected>10.0</option>
+                            <option>30.0</option>
+                        </choice-slider>
+                    </td>
+                </tr>
+            </table>
+        </fieldset>
+    </form>
+
+    <div id="images" class="gallery">
+        <img id="img0"><img id="img1"><img id="img2"><img id="img3">
+        <img id="img4"><img id="img5"><img id="img6"><img id="img7">
+        <img id="img8"><img id="img9"><img id="img10"><img id="img11">
+        <img id="img12"><img id="img13"><img id="img14"><img id="img15">
+        <img id="img16"><img id="img17"><img id="img18"><img id="img19">
+        <img id="img20"><img id="img21"><img id="img22"><img id="img23">
+        <img id="img24"><img id="img25"><img id="img26"><img id="img27">
+        <img id="img28"><img id="img29"><img id="img30"><img id="img31">
+    </div>
+</body>
+
+</html>
